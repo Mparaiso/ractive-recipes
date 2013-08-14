@@ -7,7 +7,7 @@ body {
 }
 
 code, pre {
-    font-size: 115%;
+    font-size: 90%;
     font-family: "Ubuntu Mono", sans-serif !important;
 }
 
@@ -57,13 +57,22 @@ h1, h2, h3, h4, h5, h6 {
 ul {
     list-style: none;
     padding-left: 0;
+    line-height: 30px;
 }
 
 .done {
     text-decoration: line-through;
 }
 
+li {
+    border: 1px solid transparent;
+}
+
 input {
     font-size: inherit;
     font-family: inherit;
+    margin: -1px;
+    padding: inherit;
+    border: 1px solid black;
+
 }

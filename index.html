@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <title>RACTIVE EXAMPLES</title>
     <link rel="stylesheet" href="/3/stylesheets/index.css"/>
-    <link rel="stylesheet" href="/vendor/rainbow/themes/sunburst.css"/>
+    <link rel="stylesheet" href="/vendor/prettify.css"/>
+    <link rel="stylesheet" href="/vendor/sunburst.css"/>
 </head>
 <body>
 <div class="container">
-<h1>Ractive Exemples</h1>
+<h1>Ractive Recipes</h1>
 
 <h3>by mparaiso</h3>
 
@@ -18,6 +19,8 @@
     there should be no white space after the \ in a js multiline string.<br>
     <strong>IE 6/7/8 users:</strong><br>
     Ractive exemples will works ,but the code will not show, please use a modern browser.
+    <br>
+    For the source code of each exemples check the source of this html file.
 </p>
 <noscript>
     <h2 class="warning"> Please Enable Javascript to view the exemples </h2>
@@ -25,8 +28,10 @@
 <!--[if lt IE 9]>
 <script type="text/javascript" src="/vendor/aight.js"></script>
 <![endif]-->
-<script type="text/javascript" src="/vendor/jquery.min.js"></script>
-<script type="text/javascript" src="/vendor/Ractive.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<!--<script type="text/javascript" src="/vendor/jquery.min.js"></script>-->
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/ractive.js/0.3.3/ractive.min.js"></script>
+<!--<script type="text/javascript" src="/vendor/Ractive.js"></script>-->
 <h4>About</h4>
 
 <p>This page demonstrates how to use Ractive , all exemples are live.</p>
@@ -61,7 +66,7 @@
     var names = ["Marc", "Simon", "George", "Steven", "Sam"];
     var r2 = new Ractive({
         el: document.querySelector("#e2"),
-        template: "<h5>A list of names</h5>\
+        template: "<strong>A list of names</strong>\
                        <ul>\
                        {{#names:num}}\
                        <li>{{num}} - {{names[num]}}</li>\
@@ -142,14 +147,25 @@
 <div id="e5" class="result"></div>
 <!-- TASK TEMPLATE -->
 <script class="template" type="text/ractive" id="item-template-5">
-    <li><input type="checkbox" checked="{{done}}"/>{{i}}.
-        <span class="{{done ? 'done' :''}}">{{title}}</span>
+    <!-- TASK TEMPLATE -->
+    <li><input type="checkbox" checked="{{done}}"/>
+        <span proxy-tap="edit:#todo-{{i}}" class="{{done ? 'done' :''}}">
+        {{^editing}}
+        <label for="todo-{{i}}">{{title}}</label>
+        {{/editing}}
+        {{#editing}}
+        <input type="text" value="{{.title}}" id="todo-{{i}}"
+               proxy-enter="commit:{{.title}}" proxy-blur="stop_editing"/>
+        {{/editing}}
+        </span>
+
         <a href="javascript://" proxy-tap="remove:{{i}}">X</a>
     </li>
 </script>
 <!-- MAIN TEMPLATE -->
-<script class="template" type="text/ractive" id="main-template-5">
-    <h4>Task list</h4>
+<script class="template prettyprint" type="text/ractive" id="main-template-5">
+    <!-- MAIN TEMPLATE -->
+    <strong>Task list</strong>
     <ul>
         <li><input type="text" proxy-change='newTodo'
                    proxy-enter='blur:{{newTodo}}'
@@ -158,76 +174,93 @@
                    proxy-key="enter"/>
         </li>
         {{#tasks:i}}
+        <!-- include partial in the main template -->
         {{>task}}
         {{/tasks}}
     </ul>
 </script>
 <script class="script" type="text/javascript">
-    // A Todo list with Ractive and Partials
-    var main = function () {
-        "use strict";
-        var itemTpl = document.querySelector("#item-template-5").innerHTML;
-        var mainTpl = document.querySelector("#main-template-5").innerHTML;
-        var el = document.querySelector("#e5");
-        // extend Ractive with custom methods
-        var TodoList = Ractive.extend({
-            template: mainTpl,
-            partials: {task: itemTpl},
-            removeItem: function (index) {
-                this.get("tasks").splice(index, 1);
+    /* A T.o.d.o list with Ractive and Partials */
+    var itemTpl = document.querySelector("#item-template-5").innerHTML;
+    var mainTpl = document.querySelector("#main-template-5").innerHTML;
+    /* extend Ractive with custom methods */
+    var TodoList = Ractive.extend({
+        template: mainTpl,
+        partials: {task: itemTpl},
+        removeItem: function (index) {
+            this.get("tasks").splice(index, 1);
 
-            },
-            addItem: function (title) {
-                this.get("tasks").push({title: title, done: false});
-                this.set("newTodo", "");
-            },
-            editItem: function () {
-            },
-            init: function (options) {
-                // event map
-                this.on({
-                            remove: function (event, index) {
-                                console.log(this);
-                                this.removeItem(event.index.i);
-                            },
-                            blur: function (event, title) {
-                                this.addItem(title);
-                            }
+        },
+        addItem: function (title) {
+            this.data.tasks.push({title: title, done: false});
+            this.data.newTodo = "";
+            this.update();
+        },
+        editItem: function (keypath) {
+            this.set(keypath + ".editing", true);
+        },
+        commitItem: function (index, newTitle) {
+            this.data.tasks[index].editing = false;
+            this.data.tasks[index].title = newTitle;
+            this.update();
+        },
+        stopEditing: function (keypath) {
+            this.set(keypath + ".editing", false);
+        },
+        init: function (options) {
+            /* event map */
+            this.on({
+                        remove: function (event, index) {
+                            this.removeItem(event.index.i);
+                        },
+                        blur: function (event, title) {
+                            this.addItem(title);
+                        },
+                        edit: function (event, todoId) {
+                            this.editItem(event.keypath);
+                            document.querySelector(todoId).select();
+                        },
+                        commit: function (event, commit) {
+                            this.commitItem(event.index.i, commit);
+                        },
+                        stop_editing: function (event) {
+                            this.stopEditing(event.keypath);
                         }
-                );
-            }
-        })
-        // instanciate module
-        var r5 = new TodoList({
-            el: el,
-            data: {tasks: [
-                {title: "Do the dishes", done: false},
-                {title: "Buy some bread", done: true},
-                {title: "Feed the cat", done: false}
-            ]}
-        });
-    };
-    main();
+                    }
+            );
+        }
+    });
+    // instanciate module
+    var r5 = new TodoList({
+        el: "#e5",
+        data: {tasks: [
+            {title: "Do the dishes", done: false},
+            {title: "Buy some bread", done: true},
+            {title: "Feed the cat", done: false}
+        ]}
+    });
 </script>
-<script type="text/javascript" src="/vendor/rainbow/js/rainbow.js"></script>
-<script type="text/javascript" src="/vendor/rainbow/js/language/generic.js"></script>
-<script type="text/javascript" src="/vendor/rainbow/js/language/javascript.js"></script>
-<script type="text/javascript" src="/vendor/rainbow/js/language/html.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.js
+"></script>
+<!--<script type="text/javascript" src="/vendor/prettify.js"></script>-->
 <script type="text/javascript">
     $(function () {
         "use strict";
         $(".script").each(function () {
             var $this = $(this);
-            Rainbow.color($this.html(), "javascript", function (code) {
-                $("<pre><code>" + code + "</code></pre>").insertAfter($this);
-            });
+            var $code = $("<pre>");
+            $code.text($this.html());
+            $code.addClass("prettyprint");
+            $code.insertAfter($this);
         });
         $(".template").each(function () {
             var $this = $(this);
-            Rainbow.color($this.get(0).outerHTML, 'html', function (code) {
-                $("<pre><code>" + code + "</code></pre>").insertAfter($this);
-            });
+            var $code = $("<pre></pre>");
+            $code.addClass("prettyprint");
+            $code.text($this.html());
+            $code.insertAfter($this);
         });
+        prettyPrint();
     });
 </script>
 </div>
